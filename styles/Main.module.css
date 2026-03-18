@@ -1,0 +1,97 @@
+.stage {
+  position: relative;
+}
+
+.canvas {
+  position: relative;
+  height: calc(100vh - 140px);
+  min-height: 520px;
+  width: 100%;
+}
+
+.gooStage {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.float {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  animation-name: driftY;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+@keyframes driftY {
+  0% {
+    transform: translate(-50%, calc(-50% - 18px));
+  }
+  50% {
+    transform: translate(-50%, calc(-50% + 18px));
+  }
+  100% {
+    transform: translate(-50%, calc(-50% - 18px));
+  }
+}
+
+.relations {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 92px;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.relCard {
+  width: min(680px, calc(100% - 20px));
+  border-radius: 18px;
+  padding: 12px 12px;
+  pointer-events: auto;
+}
+
+.relTitle {
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  margin-bottom: 8px;
+}
+
+.relList {
+  display: grid;
+  gap: 8px;
+}
+
+.relRow {
+  display: grid;
+  grid-template-columns: 56px 1fr 22px 1fr;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+}
+
+.relScore {
+  font-weight: 900;
+  color: rgba(0, 0, 0, 0.82);
+}
+
+.relText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.relTextMuted {
+  text-align: center;
+  color: var(--text-muted);
+  font-weight: 900;
+}
+
+@media (prefers-color-scheme: dark) {
+  .relScore {
+    color: rgba(255, 255, 255, 0.88);
+  }
+}
+

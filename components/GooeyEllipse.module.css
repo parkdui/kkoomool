@@ -1,0 +1,46 @@
+.ellipse {
+  border: 0;
+  border-radius: 9999px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  overflow: hidden;
+  transform-origin: center;
+  transition: transform 260ms ease, opacity 160ms ease;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12);
+}
+
+.ellipse:active {
+  transform: scale(0.985);
+}
+
+.inner {
+  padding: 18px 18px;
+  text-align: center;
+  line-height: 1.25;
+  font-weight: 600;
+  font-size: 14px;
+  max-width: 90%;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.light {
+  background-color: rgba(255, 255, 255, 0.76);
+  color: rgba(0, 0, 0, 0.82);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.dark {
+  background-color: rgba(0, 0, 0, 0.86);
+  color: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.selected {
+  transform: scale(1.22);
+}
+

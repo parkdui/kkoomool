@@ -1,0 +1,140 @@
+.wrap {
+  padding-bottom: 120px;
+}
+
+.h1 {
+  font-size: 28px;
+  letter-spacing: -0.8px;
+  line-height: 1.1;
+}
+
+.p {
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.ellipses {
+  position: relative;
+  margin-top: 18px;
+  height: 320px;
+  display: grid;
+  place-items: center;
+}
+
+.center {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.orbit {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(0px, 0px);
+}
+
+.composer {
+  margin-top: 18px;
+  border-radius: 18px;
+  padding: 12px 12px;
+}
+
+.textRow {
+  display: grid;
+  grid-template-columns: 1fr 52px;
+  gap: 10px;
+  align-items: start;
+}
+
+.textarea {
+  width: 100%;
+  border-radius: 16px;
+  padding: 14px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.7);
+  outline: none;
+  resize: none;
+  line-height: 1.5;
+}
+
+.micBtn {
+  border: 0;
+  border-radius: 16px;
+  width: 52px;
+  height: 52px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  filter: url("#goo");
+}
+
+.micBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.interim {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+.sliderRow {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 48px 1fr 48px;
+  gap: 10px;
+  align-items: center;
+}
+
+.slider {
+  width: 100%;
+}
+
+.sliderLabel {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 800;
+  text-align: center;
+}
+
+.saveRow {
+  margin-top: 12px;
+}
+
+.bottomRow {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.secondaryBtn {
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 14px;
+  font-weight: 800;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.74);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  filter: url("#goo");
+}
+
+.secondaryBtn:active {
+  transform: scale(0.985);
+}
+
+.error {
+  margin-top: 10px;
+  color: rgba(180, 20, 20, 0.9);
+  font-weight: 850;
+  font-size: 12px;
+}
+

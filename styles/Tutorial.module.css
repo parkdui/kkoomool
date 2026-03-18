@@ -1,0 +1,74 @@
+.wrap {
+  display: grid;
+  place-items: center;
+}
+
+.card {
+  width: 100%;
+  border-radius: 28px;
+  padding: 22px 18px;
+}
+
+.h1 {
+  font-size: 26px;
+  letter-spacing: -0.7px;
+  line-height: 1.15;
+}
+
+.p {
+  margin-top: 10px;
+  color: var(--text-muted);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.textarea {
+  margin-top: 16px;
+  width: 100%;
+  border-radius: 18px;
+  padding: 14px 14px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.7);
+  outline: none;
+  resize: none;
+  line-height: 1.5;
+}
+
+.row {
+  margin-top: 16px;
+}
+
+.smallRow {
+  margin-top: 10px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.addBtn {
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.86);
+  color: rgba(255, 255, 255, 0.92);
+  font-weight: 700;
+  cursor: pointer;
+  filter: url("#goo");
+}
+
+.addBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.bigList {
+  display: grid;
+  gap: 12px;
+}
+
+.error {
+  margin-top: 10px;
+  color: rgba(180, 20, 20, 0.9);
+  font-weight: 800;
+  font-size: 12px;
+}
+
