@@ -62,16 +62,12 @@
 }
 
 .micBtn {
-  border: 0;
   border-radius: 16px;
   width: 52px;
   height: 52px;
-  background: rgba(255, 255, 255, 0.8);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  cursor: pointer;
   display: grid;
   place-items: center;
-  filter: url("#goo");
+  padding: 0;
 }
 
 .micBtn:disabled {
@@ -117,14 +113,9 @@
 }
 
 .secondaryBtn {
-  border: 0;
   border-radius: 999px;
   padding: 12px 14px;
   font-weight: 800;
-  cursor: pointer;
-  background: rgba(255, 255, 255, 0.74);
-  border: 1px solid rgba(0, 0, 0, 0.1);
-  filter: url("#goo");
 }
 
 .secondaryBtn:active {

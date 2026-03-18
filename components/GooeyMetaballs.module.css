@@ -1,0 +1,79 @@
+.host {
+  position: relative;
+  width: 100%;
+  height: 220px;
+  display: grid;
+  place-items: center;
+  filter: url("#goo-strong");
+}
+
+.cursor {
+  position: absolute;
+  border-radius: 999px;
+  background: var(--mb-color-big, rgba(252, 252, 252, 0.86));
+  pointer-events: none;
+}
+
+.bigWrap,
+.smallWrap {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  animation: floatY 5200ms ease-in-out infinite;
+  will-change: transform;
+}
+
+.smallWrap {
+  left: calc(50% - 72px);
+  top: calc(50% + 28px);
+  animation-duration: 6100ms;
+  animation-delay: -1200ms;
+}
+
+.big,
+.small {
+  border-radius: 999px;
+}
+
+.big {
+  width: 118px;
+  height: 118px;
+  background: var(--mb-color-big, rgba(252, 252, 252, 0.86));
+}
+
+.small {
+  background: var(--mb-color-small, rgba(252, 252, 252, 0.86));
+}
+
+.small {
+  width: 64px;
+  height: 64px;
+}
+
+.cursor {
+  width: 22px;
+  height: 22px;
+  left: var(--cx, 50%);
+  top: var(--cy, 50%);
+  transform: translate(-50%, -50%) scale(calc(0.9 + (var(--s, 0) * 3.2)));
+  opacity: calc(0.25 + (var(--s, 0) * 0.75));
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.active .cursor {
+  opacity: calc(0.25 + (var(--s, 0) * 0.75));
+}
+
+@keyframes floatY {
+  0% {
+    transform: translate(-50%, calc(-50% - 10px));
+  }
+  50% {
+    transform: translate(-50%, calc(-50% + 10px));
+  }
+  100% {
+    transform: translate(-50%, calc(-50% - 10px));
+  }
+}
+

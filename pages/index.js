@@ -1,7 +1,8 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import GooeyButton from "@/components/GooeyButton";
+import GooeyButtonGroup from "@/components/GooeyButtonGroup";
 import SplashLottie from "@/components/SplashLottie";
 import { getStoredUserId, setStoredUserId, validateUserId } from "@/lib/userId";
 import { getUser } from "@/lib/firestoreModel";
@@ -14,9 +15,8 @@ export default function Onboarding() {
   const [userId, setUserId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [showSplash, setShowSplash] = useState(false);
-  const [splashLeaving, setSplashLeaving] = useState(false);
-  const [reveal, setReveal] = useState(false);
+  const [ready, setReady] = useState(false);
+  const doneRef = useRef(false);
 
   const validity = useMemo(() => validateUserId(userId), [userId]);
 
@@ -25,17 +25,11 @@ export default function Onboarding() {
     if (existing) setUserId(existing);
   }, []);
 
-  useEffect(() => {
-    setShowSplash(true);
-    setSplashLeaving(false);
-    setReveal(false);
+  const finishSplash = useCallback(() => {
+    if (doneRef.current) return;
+    doneRef.current = true;
+    setReady(true);
   }, []);
-
-  function finishSplash() {
-    setReveal(true);
-    setSplashLeaving(true);
-    window.setTimeout(() => setShowSplash(false), 520);
-  }
 
   async function diveIn() {
     setError("");
@@ -73,47 +67,49 @@ export default function Onboarding() {
         <title>kkoomool</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <div className="appShell">
-        {showSplash ? (
+      <div className={styles.page}>
+        <main className={styles.main}>
           <div
-            className={`${splashStyles.overlay} ${splashLeaving ? splashStyles.leave : ""}`}
+            className={`${styles.heroSlot} ${ready ? styles.heroReady : styles.heroIntro}`}
           >
-            <div className={splashStyles.lottie}>
-              <SplashLottie onDone={finishSplash} />
-            </div>
-          </div>
-        ) : null}
-
-        <main className={`screen ${styles.wrap} ${reveal ? "" : styles.wrapHidden}`}>
-          <div className={`${styles.card} glass`}>
-            <h1 className={`${styles.h1} header-mideum`}>kkoomool</h1>
-
-            <div className={styles.field}>
-              <div className={styles.label}>User ID</div>
-              <input
-                className={styles.input}
-                value={userId}
-                onChange={(e) => setUserId(e.target.value)}
-                placeholder="your ID"
-                autoCapitalize="none"
-                autoCorrect="off"
-                inputMode="text"
-                maxLength={24}
-              />
-              <div className={styles.hint}>
-                {error ? (
-                  <span className={styles.error}>{error}</span>
-                ) : (
-                  <span>No password. Max 16 chars. (A–Z, 0–9, _ , -)</span>
-                )}
+            <div className={splashStyles.stack}>
+              <div className={`body-large ${splashStyles.title}`}>Let your dream...</div>
+              <div className={splashStyles.lottie}>
+                <SplashLottie onDone={finishSplash} />
               </div>
             </div>
+          </div>
 
-            <div className={styles.cta}>
-              <GooeyButton onClick={diveIn} disabled={submitting}>
-                Dive in
-              </GooeyButton>
+          <div className={`${styles.form} ${ready ? "" : styles.hidden}`}>
+            <input
+              className={`${styles.input} body-medium`}
+              value={userId}
+              onChange={(e) => setUserId(e.target.value)}
+              placeholder="Your name"
+              autoCapitalize="none"
+              autoCorrect="off"
+              inputMode="text"
+              maxLength={24}
+            />
+            <div className={`${styles.hint} caption-large`}>
+              {error ? (
+                <span className={styles.error}>{error}</span>
+              ) : (
+                <span>Please use at least 3 characters.</span>
+              )}
             </div>
+          </div>
+
+          <div className={`${styles.cta} ${ready ? "" : styles.hidden} header-small`}>
+            <GooeyButtonGroup fullWidth>
+              <GooeyButton
+                onClick={diveIn}
+                disabled={submitting}
+                className={styles.diveButton}
+              >
+                Dive In
+              </GooeyButton>
+            </GooeyButtonGroup>
           </div>
         </main>
       </div>

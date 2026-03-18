@@ -5,13 +5,13 @@
   padding: 14px 16px;
   position: relative;
   cursor: pointer;
-  background: var(--accent);
-  color: var(--accent-foreground);
+  background: var(--color-primary-30);
+  color: var(--color-primary-90);
   letter-spacing: 0.2px;
   font-weight: 600;
-  transition: transform 120ms ease, opacity 120ms ease;
-  overflow: hidden;
-  filter: url("#goo");
+  isolation: isolate;
+  transition: transform 420ms cubic-bezier(0.2, 0.9, 0.2, 1),
+    border-radius 420ms cubic-bezier(0.2, 0.9, 0.2, 1), opacity 120ms ease;
 }
 
 .button:active {
@@ -28,34 +28,8 @@
   z-index: 2;
 }
 
-.blob,
-.blob2 {
-  position: absolute;
-  inset: -22px;
-  background: rgba(255, 255, 255, 0.18);
-  border-radius: 999px;
-  transform: translateX(-110%);
-  transition: transform 420ms cubic-bezier(0.2, 0.9, 0.2, 1);
-  z-index: 1;
-}
-
-.blob2 {
-  background: rgba(255, 255, 255, 0.26);
-  transform: translateX(110%);
-  transition-duration: 560ms;
-}
-
 .button:focus-visible {
-  outline: 2px solid var(--accent-weak);
+  outline: 2px solid rgba(34, 26, 78, 0.22);
   outline-offset: 3px;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .button:hover .blob {
-    transform: translateX(-35%);
-  }
-  .button:hover .blob2 {
-    transform: translateX(35%);
-  }
 }
 

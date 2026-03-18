@@ -2,6 +2,8 @@ import Head from "next/head";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
 import GooeyButton from "@/components/GooeyButton";
+import GooeyButtonGroup from "@/components/GooeyButtonGroup";
+import GooeyMetaballs from "@/components/GooeyMetaballs";
 import { useUserId } from "@/lib/useUserId";
 import { getUser, upsertUser } from "@/lib/firestoreModel";
 import { firebaseErrorToMessage } from "@/lib/firebaseError";
@@ -14,8 +16,15 @@ export default function TutorialPage() {
   const [loading, setLoading] = useState(true);
 
   const [small, setSmall] = useState("");
-  const [big, setBig] = useState([""]);
+  const [big, setBig] = useState("");
   const [error, setError] = useState("");
+  const [ellipseColors] = useState(() => {
+    const choices = ["--color-secondary-20", "--color-secondary-30", "--color-secondary-40"];
+    const i = Math.floor(Math.random() * choices.length);
+    const remaining = choices.filter((_, idx) => idx !== i);
+    const j = Math.floor(Math.random() * remaining.length);
+    return { small: choices[i], big: remaining[j] };
+  });
 
   useEffect(() => {
     if (!ready || !userId) return;
@@ -28,49 +37,44 @@ export default function TutorialPage() {
           return;
         }
         if (u?.smallDreamText) setSmall(u.smallDreamText);
-        if (Array.isArray(u?.bigDreamTexts) && u.bigDreamTexts.length) {
-          setBig(u.bigDreamTexts.slice(0, 3));
-        }
+        if (Array.isArray(u?.bigDreamTexts) && u.bigDreamTexts.length) setBig(u.bigDreamTexts[0]);
       } finally {
         setLoading(false);
       }
     })();
   }, [ready, router, userId]);
 
-  const canNextA = useMemo(() => small.trim().length > 0, [small]);
-  const canNextB = useMemo(
-    () => big.some((t) => t.trim().length > 0),
-    [big]
-  );
+  const canNextA = useMemo(() => small.trim().length >= 3, [small]);
+  const canNextB = useMemo(() => big.trim().length >= 3, [big]);
 
   async function nextA() {
     setError("");
     if (!canNextA) {
-      setError("Write something (even short).");
+      setError("Please use at least 3 characters.");
       return;
     }
     setStep(1);
   }
 
-  function addBig() {
-    if (big.length >= 3) return;
-    setBig((prev) => [...prev, ""]);
+  function back() {
+    setError("");
+    setStep(0);
   }
 
   async function finishTutorial() {
     setError("");
     if (!canNextB) {
-      setError("Add at least one big dream text.");
+      setError("Please use at least 3 characters.");
       return;
     }
     try {
-      const bigDreamTexts = big.map((t) => t.trim()).filter(Boolean).slice(0, 3);
+      const bigDreamTexts = [big.trim()];
       await upsertUser(userId, {
         createdAt: new Date().toISOString(),
         tutorialCompleted: true,
         smallDreamText: small.trim(),
         bigDreamTexts,
-        bigDreamText: bigDreamTexts.join("\n"),
+        bigDreamText: bigDreamTexts[0],
       });
       router.push("/main");
     } catch (e) {
@@ -86,63 +90,66 @@ export default function TutorialPage() {
         <title>Tutorial • kkoomool</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <div className="appShell">
-        <main className={`screen ${styles.wrap}`}>
-          <div className={`${styles.card} glass`}>
+      <div className={styles.page}>
+        <main className={styles.main}>
+          <div className={styles.top}>
             {step === 0 ? (
               <>
-                <h1 className={styles.h1}>What is your recent dream?</h1>
-                <p className={styles.p}>Write down your small goal you wanna achieve.</p>
-                <textarea
-                  className={styles.textarea}
-                  value={small}
-                  onChange={(e) => setSmall(e.target.value)}
-                  rows={6}
-                  placeholder="Your small dream..."
-                />
-                {error ? <div className={styles.error}>{error}</div> : null}
-                <div className={styles.row}>
-                  <GooeyButton onClick={nextA}>next</GooeyButton>
-                </div>
+                <div className={`body-large ${styles.kicker}`}>Let’s start with small one.<br></br>What is your recent dream?</div>
+                {/* <h1 className={`header-small ${styles.h1}`}>What is your recent dream?</h1> */}
+                <p className={`body-small ${styles.p}`}>Write small things you want to achieve.</p>
               </>
             ) : (
               <>
-                <h1 className={styles.h1}>What is your ultimate dream?</h1>
-                <p className={styles.p}>Let me know your goal of your life.</p>
-
-                <div className={styles.bigList}>
-                  {big.map((v, i) => (
-                    <textarea
-                      key={i}
-                      className={styles.textarea}
-                      value={v}
-                      onChange={(e) => {
-                        const next = [...big];
-                        next[i] = e.target.value;
-                        setBig(next);
-                      }}
-                      rows={4}
-                      placeholder={`Big dream ${i + 1}...`}
-                    />
-                  ))}
-                </div>
-
-                <div className={styles.smallRow}>
-                  <button
-                    type="button"
-                    className={`${styles.addBtn} goo`}
-                    onClick={addBig}
-                    disabled={big.length >= 3}
-                  >
-                    add
-                  </button>
-                </div>
-
-                {error ? <div className={styles.error}>{error}</div> : null}
-                <div className={styles.row}>
-                  <GooeyButton onClick={finishTutorial}>next</GooeyButton>
-                </div>
+                <div className={`body-large ${styles.kicker}`}>Got it.<br></br>What about a big dream?</div>
+                {/* <h1 className={`header-small ${styles.h1}`}></h1> */}
+                <p className={`body-small ${styles.p}`}>Write ultimate thing you want to do.</p>
               </>
+            )}
+          </div>
+
+          <div className={styles.center}>
+            <GooeyMetaballs
+              variant={step === 0 ? "single" : "double"}
+              bigColorVar={step === 0 ? ellipseColors.small : ellipseColors.big}
+              smallColorVar={ellipseColors.small}
+            />
+          </div>
+
+          <div className={styles.form}>
+            <textarea
+              className={`${styles.input} body-medium`}
+              value={step === 0 ? small : big}
+              onChange={(e) => (step === 0 ? setSmall(e.target.value) : setBig(e.target.value))}
+              placeholder={
+                step === 0 ? "My small dream is to eat strawberry cake." : "My big dream is to be an astronaut."
+              }
+              autoCapitalize="none"
+              autoCorrect="off"
+              maxLength={140}
+              rows={6}
+            />
+            <div className={`${styles.hint} caption-large`}>
+              {error ? <span className={styles.error}>{error}</span> : <span>&nbsp;</span>}
+            </div>
+          </div>
+
+          <div className={styles.cta}>
+            {step === 0 ? (
+              <GooeyButtonGroup fullWidth>
+                <GooeyButton onClick={nextA} disabled={!canNextA}>
+                  Next
+                </GooeyButton>
+              </GooeyButtonGroup>
+            ) : (
+              <GooeyButtonGroup fullWidth>
+                <GooeyButton type="button" className={styles.backBtn} onClick={back}>
+                  Back
+                </GooeyButton>
+                <GooeyButton onClick={finishTutorial} disabled={!canNextB}>
+                  Next
+                </GooeyButton>
+              </GooeyButtonGroup>
             )}
           </div>
         </main>

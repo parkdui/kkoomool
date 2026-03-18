@@ -15,8 +15,6 @@ export default function GooeyButton({
       disabled={disabled}
     >
       <span className={styles.label}>{children}</span>
-      <span className={styles.blob} aria-hidden="true" />
-      <span className={styles.blob2} aria-hidden="true" />
     </button>
   );
 }

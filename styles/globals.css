@@ -34,20 +34,20 @@
   --color-secondary-100: #2a0717;
 
   /* Semantic tokens (app uses these) */
-  --background: var(--color-gray-10);
-  --foreground: var(--color-gray-100);
-  --panel: rgba(252, 252, 252, 0.78);
-  --panel-border: rgba(15, 15, 15, 0.08);
-  --shadow: rgba(15, 15, 15, 0.08);
-  --text-muted: rgba(15, 15, 15, 0.55);
+  --background: var(--color-primary-100);
+  --foreground: var(--color-primary-10);
+  --panel: rgba(15, 15, 15, 0.35);
+  --panel-border: rgba(252, 252, 252, 0.14);
+  --shadow: rgba(0, 0, 0, 0.3);
+  --text-muted: rgba(252, 252, 252, 0.62);
 
-  --accent: var(--color-primary-70);
-  --accent-weak: var(--color-primary-20);
-  --accent-foreground: var(--color-gray-10);
-  --highlight: rgba(67, 61, 139, 0.14);
-  --danger: var(--color-secondary-70);
-  --field-bg: rgba(252, 252, 252, 0.72);
-  --field-border: rgba(15, 15, 15, 0.12);
+  --accent: var(--color-primary-30);
+  --accent-weak: rgba(212, 190, 223, 0.22);
+  --accent-foreground: var(--color-gray-100);
+  --highlight: rgba(212, 190, 223, 0.14);
+  --danger: var(--color-secondary-40);
+  --field-bg: rgba(252, 252, 252, 0.1);
+  --field-border: rgba(252, 252, 252, 0.18);
 
   /* Typography */
   --font-sans: "SF Pro Rounded", ui-rounded, -apple-system, system-ui,
@@ -55,22 +55,20 @@
     "Apple Color Emoji", "Segoe UI Emoji";
 }
 
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root {
-    --background: var(--color-gray-100);
-    --foreground: var(--color-gray-10);
-    --panel: rgba(15, 15, 15, 0.35);
-    --panel-border: rgba(252, 252, 252, 0.14);
-    --shadow: rgba(0, 0, 0, 0.3);
-    --text-muted: rgba(252, 252, 252, 0.62);
+    --panel: rgba(252, 252, 252, 0.78);
+    --panel-border: rgba(15, 15, 15, 0.08);
+    --shadow: rgba(15, 15, 15, 0.08);
+    --text-muted: rgba(15, 15, 15, 0.55);
 
-    --accent: var(--color-primary-30);
-    --accent-weak: rgba(212, 190, 223, 0.22);
-    --accent-foreground: var(--color-gray-100);
-    --highlight: rgba(212, 190, 223, 0.14);
-    --danger: var(--color-secondary-40);
-    --field-bg: rgba(252, 252, 252, 0.1);
-    --field-border: rgba(252, 252, 252, 0.18);
+    --accent: var(--color-primary-70);
+    --accent-weak: var(--color-primary-20);
+    --accent-foreground: var(--color-gray-10);
+    --highlight: rgba(67, 61, 139, 0.14);
+    --danger: var(--color-secondary-70);
+    --field-bg: rgba(252, 252, 252, 0.72);
+    --field-border: rgba(15, 15, 15, 0.12);
   }
 }
 

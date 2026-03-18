@@ -2,6 +2,7 @@ import Head from "next/head";
 import { useEffect, useMemo, useRef, useState } from "react";
 import GooeyButton from "@/components/GooeyButton";
 import GooeyEllipse from "@/components/GooeyEllipse";
+import GooeyButtonGroup from "@/components/GooeyButtonGroup";
 import Gnb from "@/components/Gnb";
 import { useUserId } from "@/lib/useUserId";
 import { addRecord, getUser } from "@/lib/firestoreModel";
@@ -11,17 +12,19 @@ import { useSpeechToText } from "@/lib/useSpeechToText";
 import styles from "@/styles/Record.module.css";
 
 function MicIcon({ active }) {
-  const fill = active ? "rgba(0,0,0,0.92)" : "rgba(0,0,0,0.5)";
+  const opacity = active ? 1 : 0.65;
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
       <path
         d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z"
-        stroke={fill}
+        stroke="currentColor"
+        strokeOpacity={opacity}
         strokeWidth="1.8"
       />
       <path
         d="M5.5 11.5c0 3.6 2.9 6.5 6.5 6.5s6.5-2.9 6.5-6.5"
-        stroke={fill}
+        stroke="currentColor"
+        strokeOpacity={opacity}
         strokeWidth="1.8"
         strokeLinecap="round"
       />
@@ -205,16 +208,18 @@ export default function RecordPage() {
                 placeholder="Type your dream…"
                 style={{ filter: blurPx ? `blur(${blurPx}px)` : undefined }}
               />
-              <button
-                type="button"
-                className={`${styles.micBtn} goo`}
-                onClick={toggle}
-                disabled={!supported}
-                aria-pressed={listening}
-                aria-label="microphone"
-              >
-                <MicIcon active={listening} />
-              </button>
+              <GooeyButtonGroup>
+                <GooeyButton
+                  type="button"
+                  className={styles.micBtn}
+                  onClick={toggle}
+                  disabled={!supported}
+                  aria-pressed={listening}
+                  aria-label="microphone"
+                >
+                  <MicIcon active={listening} />
+                </GooeyButton>
+              </GooeyButtonGroup>
             </div>
 
             {showInterim ? <div className={styles.interim}>{interim}</div> : null}
@@ -235,29 +240,33 @@ export default function RecordPage() {
             {error ? <div className={styles.error}>{error}</div> : null}
 
             <div className={styles.saveRow}>
-              <GooeyButton onClick={saveOne} disabled={saving}>
-                save
-              </GooeyButton>
+              <GooeyButtonGroup fullWidth>
+                <GooeyButton onClick={saveOne} disabled={saving}>
+                  save
+                </GooeyButton>
+              </GooeyButtonGroup>
             </div>
           </div>
 
           <div className={styles.bottomRow}>
-            <button
-              type="button"
-              className={`${styles.secondaryBtn} goo`}
-              onClick={finish}
-              disabled={saving}
-            >
-              finish
-            </button>
-            <button
-              type="button"
-              className={`${styles.secondaryBtn} goo`}
-              onClick={saveOne}
-              disabled={saving}
-            >
-              add
-            </button>
+            <GooeyButtonGroup fullWidth>
+              <GooeyButton
+                type="button"
+                className={styles.secondaryBtn}
+                onClick={finish}
+                disabled={saving}
+              >
+                finish
+              </GooeyButton>
+              <GooeyButton
+                type="button"
+                className={styles.secondaryBtn}
+                onClick={saveOne}
+                disabled={saving}
+              >
+                add
+              </GooeyButton>
+            </GooeyButtonGroup>
           </div>
         </main>
         <Gnb />
