@@ -1,4 +1,5 @@
 import Head from "next/head";
+import { useRouter } from "next/router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import GooeyButton from "@/components/GooeyButton";
 import GooeyButtonGroup from "@/components/GooeyButtonGroup";
@@ -10,14 +11,22 @@ import { formatTimeStamp } from "@/lib/time";
 import styles from "@/styles/Record.module.css";
 
 export default function RecordPage() {
+  const router = useRouter();
   const { userId, ready } = useUserId({ required: true });
-  const [user, setUser] = useState(null);
 
-  const [step, setStep] = useState(0); // 0: write, 1: blur
+  const [step, setStep] = useState(0); // 0: write, 1: blur, 2: done
   const [draft, setDraft] = useState("");
-  const [blur, setBlur] = useState(50);
+  const [blur, setBlur] = useState(0);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [user, setUser] = useState(null);
+  const [resultImageUrl, setResultImageUrl] = useState("");
+  const [resultImagePath, setResultImagePath] = useState("");
+  const [resultTimeStamp, setResultTimeStamp] = useState("");
+  const [isPublic, setIsPublic] = useState(false);
+  const [finalizing, setFinalizing] = useState(false);
+  const [analysisLoading, setAnalysisLoading] = useState(false);
+  const [analysis, setAnalysis] = useState(null);
   const [gooActive, setGooActive] = useState(false);
 
   const gooRef = useRef(null);
@@ -30,6 +39,40 @@ export default function RecordPage() {
       setUser(u);
     })();
   }, [ready, userId]);
+
+  useEffect(() => {
+    if (step !== 2) return;
+
+    let alive = true;
+    (async () => {
+      setAnalysisLoading(true);
+      try {
+        const resp = await fetch("/api/relate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            smallDreamText: user?.smallDreamText || "",
+            bigDreamText: user?.bigDreamText || (user?.bigDreamTexts || []).join("\n"),
+            dreamText: draft.trim(),
+          }),
+        });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data?.error || "analysis_failed");
+        if (!alive) return;
+        setAnalysis(data?.analysis || null);
+      } catch {
+        if (!alive) return;
+        setAnalysis(null);
+      } finally {
+        if (!alive) return;
+        setAnalysisLoading(false);
+      }
+    })();
+
+    return () => {
+      alive = false;
+    };
+  }, [step, user, draft]);
 
   const blurPx = useMemo(() => {
     // slider 0..100 -> blur 0..10px
@@ -118,37 +161,67 @@ export default function RecordPage() {
         contentType: "image/png",
       });
 
-      const dream = {
-        text,
-        blur: blurPx,
-        imageUrl: url,
-        imageStoragePath: path,
-      };
- 
-      const base = {
-        userId,
-        time_stamp: timeStamp,
-        small_dream_text: user?.smallDreamText || "",
-        big_dream_text: user?.bigDreamText || (user?.bigDreamTexts || []).join("\n"),
-        nightDreams: [
-          {
-            text: dream.text,
-            blur: dream.blur,
-            imageUrl: dream.imageUrl,
-          },
-        ],
-        night_dream_1: 1,
-        night_dream_1_text: dream.text,
-        night_dream_1_blur: dream.blur,
-        night_dream_1_img: dream.imageUrl,
-      };
-
-      await addRecord(userId, base);
-      window.location.href = "/main";
+      if (!path) {
+        throw new Error("Image upload failed: no storage path returned.");
+      }
+      setResultImageUrl(url);
+      setResultImagePath(path);
+      setResultTimeStamp(timeStamp);
+      setAnalysis(null);
+      setStep(2);
     } catch (e) {
       setError(e?.message || "Could not write record. Check Firestore rules.");
     } finally {
       setSaving(false);
+    }
+  }
+
+  function discardDraft() {
+    const ok = window.confirm("Discard this dream? You will lose this generated result.");
+    if (!ok) return;
+    setError("");
+    setStep(1);
+    setResultImageUrl("");
+    setResultImagePath("");
+    setResultTimeStamp("");
+    setAnalysis(null);
+  }
+
+  async function saveDream() {
+    const text = draft.trim();
+    if (!text || !resultImageUrl || !resultImagePath) {
+      setError("Nothing to save yet.");
+      return;
+    }
+    setError("");
+    setFinalizing(true);
+    try {
+      const timeStamp = resultTimeStamp || formatTimeStamp(new Date());
+      const base = {
+        userId,
+        time_stamp: timeStamp,
+        isPublic,
+        text,
+        blur: blurPx,
+        blurPercent: blur,
+        imageUrl: resultImageUrl,
+        imageStoragePath: resultImagePath,
+        small_dream_text: user?.smallDreamText || "",
+        big_dream_text: user?.bigDreamText || (user?.bigDreamTexts || []).join("\n"),
+        analysisSummary: analysis?.summary || "",
+        analysisClosestTo: analysis?.closestTo || "none",
+        nightDreams: [{ text, blur: blurPx, imageUrl: resultImageUrl }],
+        night_dream_1: 1,
+        night_dream_1_text: text,
+        night_dream_1_blur: blurPx,
+        night_dream_1_img: resultImageUrl,
+      };
+      await addRecord(userId, base);
+      router.push("/main");
+    } catch (e) {
+      setError(e?.message || "Could not save this dream.");
+    } finally {
+      setFinalizing(false);
     }
   }
 
@@ -162,15 +235,55 @@ export default function RecordPage() {
         <main className={`screen ${styles.home}`}>
           <header className={styles.header}>
             <h1 className={`header-small`}>
-              {step === 0 ? "What have you dreamed?" : "And how clear do you recall?"}
+              {saving
+                ? "Recording..."
+                : step === 2
+                ? "Done."
+                : step === 0
+                ? "What have you dreamed?"
+                : "And how clear do you recall?"}
             </h1>
             <p className={`body-small ${styles.sub}`}>
-              {step === 0 ? "Describe your last night dream." : "Set the level of blur."}
+              {saving
+                ? "This might take 1-3 minutes."
+                : step === 2
+                ? "Here, you dreamed this."
+                : step === 0
+                ? "Describe your last night dream."
+                : "Set the level of blur."}
             </p>
           </header>
 
           <div className={styles.ellipseStage} aria-hidden="true">
-            {step === 1 ? (
+            {saving ? (
+              <div className={styles.loadingOrbital}>
+                <div className={`${styles.loadingOrbitTrack} ${styles.loadingOrbitA}`}>
+                  <span className={`${styles.loadingBlob} ${styles.loadingBlobA1}`} />
+                  <span className={`${styles.loadingBlob} ${styles.loadingBlobA2}`} />
+                  <span className={`${styles.loadingBlob} ${styles.loadingBlobA3}`} />
+                </div>
+                <div className={`${styles.loadingOrbitTrack} ${styles.loadingOrbitB}`}>
+                  <span className={`${styles.loadingBlob} ${styles.loadingBlobB1}`} />
+                  <span className={`${styles.loadingBlob} ${styles.loadingBlobB2}`} />
+                  <span className={`${styles.loadingBlob} ${styles.loadingBlobB3}`} />
+                </div>
+                <div className={`${styles.loadingOrbitTrack} ${styles.loadingOrbitC}`}>
+                  <span className={`${styles.loadingBlob} ${styles.loadingBlobC1}`} />
+                  <span className={`${styles.loadingBlob} ${styles.loadingBlobC2}`} />
+                </div>
+              </div>
+            ) : step === 2 ? (
+              <>
+                <div className={`${styles.previewLabel} ${styles.resultLabel}`}>{truncated}</div>
+                <div className={styles.resultImageWrap}>
+                  <div className={styles.resultImageEllipse}>
+                    {resultImageUrl ? (
+                      <img className={styles.resultImage} src={resultImageUrl} alt="Generated dream" />
+                    ) : null}
+                  </div>
+                </div>
+              </>
+            ) : step === 1 ? (
               <>
                 <div
                   className={styles.previewLabel}
@@ -200,7 +313,7 @@ export default function RecordPage() {
             )}
           </div>
 
-          {step === 0 ? (
+          {!saving && step === 0 ? (
             <div className={styles.card}>
               <textarea
                 className={`body-medium ${styles.textarea}`}
@@ -211,7 +324,7 @@ export default function RecordPage() {
               />
               {error ? <div className={styles.error}>{error}</div> : null}
             </div>
-          ) : (
+          ) : !saving && step === 1 ? (
             <div className={styles.blurPanel}>
               <div className={styles.sliderRow}>
                 <div className={`body-small ${styles.sliderLabel}`}>Clear</div>
@@ -229,32 +342,86 @@ export default function RecordPage() {
               </div>
               {error ? <div className={styles.error}>{error}</div> : null}
             </div>
-          )}
+          ) : null
+          }
 
-          <div className={styles.cta}>
-            {step === 0 ? (
-              <GooeyButtonGroup fullWidth>
-                <GooeyButton onClick={goNextFromWrite} disabled={saving}>
-                  Next
-                </GooeyButton>
-              </GooeyButtonGroup>
-            ) : (
+          {!saving && step === 2 ? (
+            <section className={styles.doneSections}>
+              <div className={styles.publicCard}>
+                <div>
+                  <div className={`body-large ${styles.cardTitle}`}>Do you want it public?</div>
+                  <div className={`body-small ${styles.cardSub}`}>Yes, other users can see your dream.</div>
+                </div>
+                <button
+                  type="button"
+                  className={`${styles.publicToggle} ${isPublic ? styles.publicOn : ""}`}
+                  aria-pressed={isPublic}
+                  aria-label={isPublic ? "Set dream private" : "Set dream public"}
+                  onClick={() => setIsPublic((v) => !v)}
+                >
+                  <span className={styles.toggleThumb} />
+                  <span className={`body-small ${styles.toggleText}`}>{isPublic ? "Public" : "Private"}</span>
+                </button>
+              </div>
+
+              <div className={styles.analysisCard}>
+                <div className={`body-large ${styles.cardTitle}`}>Dream relation analysis</div>
+                {analysisLoading ? (
+                  <div className={`body-small ${styles.cardSub}`}>Analyzing relation with your small and big dreams...</div>
+                ) : (
+                  <div className={`body-small ${styles.analysisValue}`}>
+                    {analysis?.summary || "This dream does not clearly connect to your small or big dream yet."}
+                  </div>
+                )}
+              </div>
+              {error ? <div className={styles.error}>{error}</div> : null}
+            </section>
+          ) : null}
+
+          {!saving && (step === 0 || step === 1) ? (
+            <div className={styles.cta}>
+              {step === 0 ? (
+                <GooeyButtonGroup fullWidth>
+                  <GooeyButton onClick={goNextFromWrite} disabled={saving}>
+                    Next
+                  </GooeyButton>
+                </GooeyButtonGroup>
+              ) : step === 1 ? (
+                <GooeyButtonGroup fullWidth>
+                  <GooeyButton
+                    type="button"
+                    className={styles.backBtn}
+                    onClick={goBack}
+                    disabled={saving}
+                  >
+                    Back
+                  </GooeyButton>
+                  <GooeyButton onClick={submit} disabled={saving}>
+                    Next
+                  </GooeyButton>
+                </GooeyButtonGroup>
+              ) : null}
+            </div>
+          ) : null}
+          {!saving && step === 2 ? (
+            <div className={styles.cta}>
               <GooeyButtonGroup fullWidth>
                 <GooeyButton
                   type="button"
                   className={styles.backBtn}
-                  onClick={goBack}
-                  disabled={saving}
+                  onClick={discardDraft}
+                  disabled={finalizing}
                 >
-                  Back
+                  Discard
                 </GooeyButton>
-                <GooeyButton onClick={submit} disabled={saving}>
-                  Next
+                <GooeyButton type="button" onClick={saveDream} disabled={finalizing}>
+                  {finalizing ? "Saving..." : "Save"}
                 </GooeyButton>
               </GooeyButtonGroup>
-            )}
-          </div>
+            </div>
+          ) : null}
         </main>
+        {saving ? <div className={styles.loadingOverlay} aria-hidden="true" /> : null}
         <Gnb />
       </div>
     </>

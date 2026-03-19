@@ -58,12 +58,42 @@
   text-overflow: ellipsis;
 }
 
+.resultLabel {
+  top: 34px;
+  z-index: 1;
+}
+
+.resultImageWrap {
+  position: absolute;
+  left: 50%;
+  top: 58%;
+  transform: translate(-50%, -50%);
+}
+
+.resultImageEllipse {
+  width: 256px;
+  height: 256px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--color-secondary-20);
+  box-shadow: 0 20px 56px rgba(11, 7, 28, 0.28);
+  animation: floatYLarge 5600ms ease-in-out infinite;
+}
+
+.resultImage {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+
 .gooOuter {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  pointer-events: none;
+  pointer-events: auto;
 }
 
 .gooStage {
@@ -108,29 +138,17 @@
 
 .underDotA,
 .underDotB {
-  /* position: absolute; */
-  /* top: 138px; */
   width: 22px;
   height: 22px;
   border-radius: 999px;
   background: var(--color-primary-70);
   z-index: 1;
-  /* transform: translateX(-50%), translateY(10%); */
 }
 
 .underDotB {
   width: 16px;
   height: 16px;
 }
-
-/* .underDotA { */
-  /* left: calc(50% - 14px); */
-  /* transform: translateX(-50%), translateY(-50%); */
-/* } */
-
-/* .underDotB { */
-  /* left: calc(50% + 14px); */
-/* } */
 
 .blurPanel {
   margin-top: 6px;
@@ -241,7 +259,7 @@
 }
 
 .cta {
-  margin-top: 48px;
+  margin-top: 12px;
 }
 
 .error {
@@ -249,6 +267,233 @@
   color: rgba(244, 235, 249, 0.85);
   font-weight: 700;
   font-size: 12px;
+}
+
+.doneSections {
+  display: grid;
+  gap: 12px;
+}
+
+.publicCard,
+.analysisCard {
+  border-radius: 14px;
+  background: var(--color-primary-80);
+  padding: 16px;
+}
+
+.publicCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cardTitle {
+  color: var(--color-primary-10);
+}
+
+.cardSub {
+  margin-top: 6px;
+  color: var(--color-primary-30);
+}
+
+.publicToggle {
+  position: relative;
+  width: 110px;
+  height: 42px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0;
+  background: var(--color-gray-70);
+  cursor: pointer;
+  transition: background-color 180ms ease;
+}
+
+.publicOn {
+  background: var(--color-primary-60);
+}
+
+.toggleText {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-gray-20);
+  z-index: 1;
+}
+
+.publicOn .toggleText {
+  color: var(--color-primary-10);
+}
+
+.toggleThumb {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: var(--color-gray-20);
+  transition: transform 220ms ease, background-color 180ms ease;
+  z-index: 2;
+}
+
+.publicOn .toggleThumb {
+  transform: translateX(68px);
+  background: var(--color-primary-10);
+}
+
+.analysisItem {
+  margin-top: 12px;
+}
+
+.analysisLabel {
+  color: var(--color-secondary-20);
+}
+
+.analysisValue {
+  margin-top: 4px;
+  color: var(--color-primary-10);
+  line-height: 1.45;
+}
+
+.loadingOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: transparent;
+  pointer-events: auto;
+}
+
+.loadingOrbital {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  filter: url("#goo-strong");
+  pointer-events: none;
+}
+
+.loadingOrbitTrack {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.loadingBlob {
+  position: absolute;
+  border-radius: 999px;
+  background: var(--color-secondary-20);
+  display: block;
+}
+
+.loadingOrbitA {
+  animation: orbitCcw 9s linear infinite;
+}
+
+.loadingOrbitB {
+  animation: orbitCcw 12s linear infinite;
+}
+
+.loadingOrbitC {
+  animation: orbitCcw 15s linear infinite;
+}
+
+.loadingBlobA1 {
+  width: 104px;
+  height: 104px;
+  left: calc(50% - 52px);
+  top: calc(50% - 44px);
+  background: var(--color-secondary-30);
+}
+
+.loadingBlobA2 {
+  width: 62px;
+  height: 62px;
+  left: calc(50% + 32px);
+  top: calc(50% + 6px);
+  background: var(--color-secondary-20);
+}
+
+.loadingBlobA3 {
+  width: 46px;
+  height: 46px;
+  left: calc(50% - 18px);
+  top: calc(50% + 90px);
+  background: var(--color-secondary-10);
+}
+
+.loadingBlobB1 {
+  width: 36px;
+  height: 36px;
+  left: calc(50% - 112px);
+  top: calc(50% + 44px);
+  background: var(--color-secondary-40);
+}
+
+.loadingBlobB2 {
+  width: 32px;
+  height: 32px;
+  left: calc(50% - 58px);
+  top: calc(50% - 74px);
+  background: var(--color-secondary-10);
+}
+
+.loadingBlobB3 {
+  width: 28px;
+  height: 28px;
+  left: calc(50% + 90px);
+  top: calc(50% - 36px);
+  background: var(--color-secondary-30);
+}
+
+.loadingBlobC1 {
+  width: 24px;
+  height: 24px;
+  left: calc(50% - 102px);
+  top: calc(50% - 38px);
+  background: var(--color-secondary-20);
+}
+
+.loadingBlobC2 {
+  width: 46px;
+  height: 46px;
+  left: calc(50% + 56px);
+  top: calc(50% + 72px);
+  background: var(--color-secondary-10);
+}
+
+@keyframes orbitCcw {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(-360deg);
+  }
+}
+
+@keyframes popIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes floatYLarge {
+  0% {
+    transform: translateY(-12px);
+  }
+  50% {
+    transform: translateY(12px);
+  }
+  100% {
+    transform: translateY(-12px);
+  }
 }
 
 @keyframes floatY {

@@ -4,64 +4,102 @@ function json(res, status, data) {
   res.status(status).json(data);
 }
 
-function dot(a, b) {
-  let s = 0;
-  for (let i = 0; i < a.length; i++) s += a[i] * b[i];
-  return s;
+function normalizeBlock(input) {
+  return String(input || "")
+    .trim()
+    .replace(/\s+/g, " ");
 }
 
-function norm(a) {
-  return Math.sqrt(dot(a, a));
-}
-
-function cosine(a, b) {
-  const na = norm(a);
-  const nb = norm(b);
-  if (!na || !nb) return 0;
-  return dot(a, b) / (na * nb);
+function fallbackAnalysis() {
+  return {
+    summary: "This dream does not clearly connect to your small or big dream yet.",
+    closestTo: "none",
+    small: {
+      related: false,
+      confidence: 0,
+      summary: "Not enough context to determine relation.",
+    },
+    big: {
+      related: false,
+      confidence: 0,
+      summary: "Not enough context to determine relation.",
+    },
+  };
 }
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return json(res, 405, { error: "method_not_allowed" });
 
-  const { goals, dreams } = req.body || {};
-  const goalTexts = (Array.isArray(goals) ? goals : []).map((t) => String(t || "").trim()).filter(Boolean);
-  const dreamTexts = (Array.isArray(dreams) ? dreams : []).map((t) => String(t || "").trim()).filter(Boolean);
+  const { smallDreamText, bigDreamText, dreamText } = req.body || {};
+  const small = normalizeBlock(smallDreamText);
+  const big = normalizeBlock(bigDreamText);
+  const dream = normalizeBlock(dreamText);
 
-  if (!goalTexts.length || !dreamTexts.length) return json(res, 200, { pairs: [] });
-  if (!process.env.OPENAI_API_KEY) return json(res, 200, { pairs: [] });
+  if (!dream) return json(res, 200, { analysis: fallbackAnalysis() });
+  if (!process.env.OPENAI_API_KEY) return json(res, 200, { analysis: fallbackAnalysis() });
 
   const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
   try {
-    const all = [...goalTexts, ...dreamTexts];
-    const emb = await client.embeddings.create({
-      model: "text-embedding-3-small",
-      input: all,
+    const completion = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      temperature: 0.2,
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "You analyze semantic relation between a new dream and two user goals. Return strict JSON only.",
+        },
+        {
+          role: "user",
+          content: JSON.stringify({
+            task: "Compare relation of dream text with small and big dreams and write one user-facing sentence.",
+            input: {
+              smallDreamText: small || "(empty)",
+              bigDreamText: big || "(empty)",
+              dreamText: dream,
+            },
+            output_schema: {
+              summary: "single plain sentence for UI, max 160 chars",
+              closestTo: "one of: small, big, both, none",
+              small: {
+                related: "boolean",
+                confidence: "integer 0..100",
+                summary: "short sentence, max 120 chars",
+              },
+              big: {
+                related: "boolean",
+                confidence: "integer 0..100",
+                summary: "short sentence, max 120 chars",
+              },
+            },
+          }),
+        },
+      ],
     });
 
-    const vecs = emb.data.map((d) => d.embedding);
-    const goalVecs = vecs.slice(0, goalTexts.length);
-    const dreamVecs = vecs.slice(goalTexts.length);
-
-    const pairs = [];
-    for (let di = 0; di < dreamTexts.length; di++) {
-      let best = { gi: 0, score: -1 };
-      for (let gi = 0; gi < goalTexts.length; gi++) {
-        const s = cosine(dreamVecs[di], goalVecs[gi]);
-        if (s > best.score) best = { gi, score: s };
-      }
-      pairs.push({
-        goal: goalTexts[best.gi],
-        dream: dreamTexts[di],
-        score: Math.max(0, Math.min(1, (best.score + 1) / 2)), // map -1..1 -> 0..1
-      });
-    }
-
-    pairs.sort((a, b) => b.score - a.score);
-    return json(res, 200, { pairs });
+    const raw = completion.choices?.[0]?.message?.content || "{}";
+    const parsed = JSON.parse(raw);
+    const normalized = {
+      summary: String(parsed?.summary || "This dream has no clear relation yet."),
+      closestTo: ["small", "big", "both", "none"].includes(parsed?.closestTo)
+        ? parsed.closestTo
+        : "none",
+      small: {
+        related: Boolean(parsed?.small?.related),
+        confidence: Math.max(0, Math.min(100, Number(parsed?.small?.confidence) || 0)),
+        summary: String(parsed?.small?.summary || "No clear relation found."),
+      },
+      big: {
+        related: Boolean(parsed?.big?.related),
+        confidence: Math.max(0, Math.min(100, Number(parsed?.big?.confidence) || 0)),
+        summary: String(parsed?.big?.summary || "No clear relation found."),
+      },
+    };
+    return json(res, 200, { analysis: normalized });
   } catch {
-    return json(res, 200, { pairs: [] });
+    return json(res, 200, { analysis: fallbackAnalysis() });
   }
 }
 
