@@ -1,50 +1,27 @@
 import Head from "next/head";
 import { useEffect, useMemo, useRef, useState } from "react";
 import GooeyButton from "@/components/GooeyButton";
-import GooeyEllipse from "@/components/GooeyEllipse";
 import GooeyButtonGroup from "@/components/GooeyButtonGroup";
 import Gnb from "@/components/Gnb";
 import { useUserId } from "@/lib/useUserId";
 import { addRecord, getUser } from "@/lib/firestoreModel";
 import { uploadDataUrl } from "@/lib/storageModel";
 import { formatTimeStamp } from "@/lib/time";
-import { useSpeechToText } from "@/lib/useSpeechToText";
 import styles from "@/styles/Record.module.css";
-
-function MicIcon({ active }) {
-  const opacity = active ? 1 : 0.65;
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d="M12 14a3 3 0 0 0 3-3V6a3 3 0 1 0-6 0v5a3 3 0 0 0 3 3Z"
-        stroke="currentColor"
-        strokeOpacity={opacity}
-        strokeWidth="1.8"
-      />
-      <path
-        d="M5.5 11.5c0 3.6 2.9 6.5 6.5 6.5s6.5-2.9 6.5-6.5"
-        stroke="currentColor"
-        strokeOpacity={opacity}
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
 
 export default function RecordPage() {
   const { userId, ready } = useUserId({ required: true });
   const [user, setUser] = useState(null);
 
+  const [step, setStep] = useState(0); // 0: write, 1: blur
   const [draft, setDraft] = useState("");
-  const [blur, setBlur] = useState(0);
+  const [blur, setBlur] = useState(50);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
-  const [items, setItems] = useState([]);
+  const [gooActive, setGooActive] = useState(false);
 
-  const { supported, listening, interim, toggle, bind } = useSpeechToText({
-    lang: "en-US",
-  });
+  const gooRef = useRef(null);
+  const rafRef = useRef(0);
 
   useEffect(() => {
     if (!ready || !userId) return;
@@ -54,41 +31,65 @@ export default function RecordPage() {
     })();
   }, [ready, userId]);
 
-  useEffect(() => {
-    return bind((finalText) => {
-      setDraft((prev) => (prev ? `${prev} ${finalText}` : finalText).trim());
-    });
-  }, [bind]);
-
   const blurPx = useMemo(() => {
     // slider 0..100 -> blur 0..10px
     return Math.round((blur / 100) * 10 * 10) / 10;
   }, [blur]);
 
-  const orbitRef = useRef(null);
+  const truncated = useMemo(() => {
+    const t = draft.trim().replace(/\s+/g, " ");
+    if (t.length <= 20) return t;
+    return `${t.slice(0, 20)}...`;
+  }, [draft]);
 
-  useEffect(() => {
-    let raf = 0;
-    const start = performance.now();
-    function tick(now) {
-      const t = (now - start) / 1000;
-      const r = 36;
-      const x = Math.cos(t * 0.35) * r;
-      const y = Math.sin(t * 0.35) * r;
-      if (orbitRef.current) {
-        orbitRef.current.style.transform = `translate(${x}px, ${y}px)`;
-      }
-      raf = requestAnimationFrame(tick);
-    }
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
+  function setCursorVars(clientX, clientY) {
+    const el = gooRef.current;
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    cancelAnimationFrame(rafRef.current);
+    rafRef.current = requestAnimationFrame(() => {
+      el.style.setProperty("--cx", `${x}px`);
+      el.style.setProperty("--cy", `${y}px`);
+    });
+  }
 
-  async function saveOne() {
+  function onPointerMove(e) {
+    if (e.pointerType && e.pointerType !== "mouse") return;
+    setCursorVars(e.clientX, e.clientY);
+  }
+
+  function onPointerEnter(e) {
+    if (e.pointerType && e.pointerType !== "mouse") return;
+    setGooActive(true);
+    setCursorVars(e.clientX, e.clientY);
+  }
+
+  function onPointerLeave() {
+    setGooActive(false);
+  }
+
+  function goNextFromWrite() {
     setError("");
     const text = draft.trim();
     if (!text) {
-      setError("Write (or speak) something first.");
+      setError("Write something first.");
+      return;
+    }
+    setStep(1);
+  }
+
+  function goBack() {
+    setError("");
+    setStep(0);
+  }
+
+  async function submit() {
+    setError("");
+    const text = draft.trim();
+    if (!text) {
+      setError("Write something first.");
       return;
     }
 
@@ -123,58 +124,33 @@ export default function RecordPage() {
         imageUrl: url,
         imageStoragePath: path,
       };
-      setItems((prev) => [...prev, dream]);
-
-      // reset composer for "add"
-      setDraft("");
-      setBlur(0);
-    } catch (e) {
-      setError(e?.message || "Save failed.");
-    } finally {
-      setSaving(false);
-    }
-  }
-
-  async function finish() {
-    setError("");
-    if (!items.length) {
-      setError("Add at least one dream first.");
-      return;
-    }
-    setSaving(true);
-    try {
-      const timeStamp = formatTimeStamp(new Date());
+ 
       const base = {
         userId,
         time_stamp: timeStamp,
         small_dream_text: user?.smallDreamText || "",
         big_dream_text: user?.bigDreamText || (user?.bigDreamTexts || []).join("\n"),
-        nightDreams: items.map((d) => ({
-          text: d.text,
-          blur: d.blur,
-          imageUrl: d.imageUrl,
-        })),
+        nightDreams: [
+          {
+            text: dream.text,
+            blur: dream.blur,
+            imageUrl: dream.imageUrl,
+          },
+        ],
+        night_dream_1: 1,
+        night_dream_1_text: dream.text,
+        night_dream_1_blur: dream.blur,
+        night_dream_1_img: dream.imageUrl,
       };
 
-      const denorm = {};
-      items.forEach((d, idx) => {
-        const n = idx + 1;
-        denorm[`night_dream_${n}`] = n;
-        denorm[`night_dream_${n}_text`] = d.text;
-        denorm[`night_dream_${n}_blur`] = d.blur;
-        denorm[`night_dream_${n}_img`] = d.imageUrl;
-      });
-
-      await addRecord(userId, { ...base, ...denorm });
+      await addRecord(userId, base);
       window.location.href = "/main";
-    } catch {
-      setError("Could not write record. Check Firestore rules.");
+    } catch (e) {
+      setError(e?.message || "Could not write record. Check Firestore rules.");
     } finally {
       setSaving(false);
     }
   }
-
-  const showInterim = listening && interim;
 
   return (
     <>
@@ -183,90 +159,100 @@ export default function RecordPage() {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
       <div className="appShell">
-        <main className={`screen ${styles.wrap}`}>
-          <h1 className={styles.h1}>What have you dreamed?</h1>
-          <p className={styles.p}>Spit it out unless the dream will be vanished.</p>
+        <main className={`screen ${styles.home}`}>
+          <header className={styles.header}>
+            <h1 className={`header-small`}>
+              {step === 0 ? "What have you dreamed?" : "And how clear do you recall?"}
+            </h1>
+            <p className={`body-small ${styles.sub}`}>
+              {step === 0 ? "Describe your last night dream." : "Set the level of blur."}
+            </p>
+          </header>
 
-          <div className={`${styles.ellipses} goo`}>
-            <div className={styles.center}>
-              <GooeyEllipse size={220} tone="dark">
-                {items.length ? `${items.length} saved` : ""}
-              </GooeyEllipse>
-            </div>
-            <div className={styles.orbit} ref={orbitRef}>
-              <GooeyEllipse size={160} tone="light" />
-            </div>
+          <div className={styles.ellipseStage} aria-hidden="true">
+            {step === 1 ? (
+              <>
+                <div
+                  className={styles.previewLabel}
+                  style={{ filter: blurPx ? `blur(${blurPx}px)` : undefined }}
+                >
+                  {truncated}
+                </div>
+                <div className={styles.gooOuter} style={{ filter: blurPx ? `blur(${blurPx}px)` : undefined }}>
+                  <div
+                    ref={gooRef}
+                    className={`${styles.gooStage} ${gooActive ? styles.gooActive : ""}`}
+                    onPointerMove={onPointerMove}
+                    onPointerEnter={onPointerEnter}
+                    onPointerLeave={onPointerLeave}
+                  >
+                    <div className={`${styles.floatingEllipse} ${styles.floatingEllipseBig}`} />
+                    <div className={styles.underDots}>
+                      <span className={styles.underDotA} />
+                      <span className={styles.underDotB} />
+                    </div>
+                    <span className={styles.cursorBlob} aria-hidden="true" />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className={styles.floatingEllipse} />
+            )}
           </div>
 
-          <div className={`${styles.composer} glass`}>
-            <div className={styles.textRow}>
+          {step === 0 ? (
+            <div className={styles.card}>
               <textarea
-                className={styles.textarea}
+                className={`body-medium ${styles.textarea}`}
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
-                rows={5}
-                placeholder="Type your dream…"
-                style={{ filter: blurPx ? `blur(${blurPx}px)` : undefined }}
+                rows={4}
+                placeholder="A sun was arising, the light was dimmed, and I felt warmth..."
               />
-              <GooeyButtonGroup>
+              {error ? <div className={styles.error}>{error}</div> : null}
+            </div>
+          ) : (
+            <div className={styles.blurPanel}>
+              <div className={styles.sliderRow}>
+                <div className={`body-small ${styles.sliderLabel}`}>Clear</div>
+                <input
+                  className={styles.slider}
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={blur}
+                  onChange={(e) => setBlur(Number(e.target.value))}
+                  style={{ "--p": `${blur}%` }}
+                  aria-label="Blur level"
+                />
+                <div className={`body-small ${styles.sliderLabel}`}>Blurry</div>
+              </div>
+              {error ? <div className={styles.error}>{error}</div> : null}
+            </div>
+          )}
+
+          <div className={styles.cta}>
+            {step === 0 ? (
+              <GooeyButtonGroup fullWidth>
+                <GooeyButton onClick={goNextFromWrite} disabled={saving}>
+                  Next
+                </GooeyButton>
+              </GooeyButtonGroup>
+            ) : (
+              <GooeyButtonGroup fullWidth>
                 <GooeyButton
                   type="button"
-                  className={styles.micBtn}
-                  onClick={toggle}
-                  disabled={!supported}
-                  aria-pressed={listening}
-                  aria-label="microphone"
+                  className={styles.backBtn}
+                  onClick={goBack}
+                  disabled={saving}
                 >
-                  <MicIcon active={listening} />
+                  Back
+                </GooeyButton>
+                <GooeyButton onClick={submit} disabled={saving}>
+                  Next
                 </GooeyButton>
               </GooeyButtonGroup>
-            </div>
-
-            {showInterim ? <div className={styles.interim}>{interim}</div> : null}
-
-            <div className={styles.sliderRow}>
-              <div className={styles.sliderLabel}>clear</div>
-              <input
-                className={styles.slider}
-                type="range"
-                min="0"
-                max="100"
-                value={blur}
-                onChange={(e) => setBlur(Number(e.target.value))}
-              />
-              <div className={styles.sliderLabel}>blurry</div>
-            </div>
-
-            {error ? <div className={styles.error}>{error}</div> : null}
-
-            <div className={styles.saveRow}>
-              <GooeyButtonGroup fullWidth>
-                <GooeyButton onClick={saveOne} disabled={saving}>
-                  save
-                </GooeyButton>
-              </GooeyButtonGroup>
-            </div>
-          </div>
-
-          <div className={styles.bottomRow}>
-            <GooeyButtonGroup fullWidth>
-              <GooeyButton
-                type="button"
-                className={styles.secondaryBtn}
-                onClick={finish}
-                disabled={saving}
-              >
-                finish
-              </GooeyButton>
-              <GooeyButton
-                type="button"
-                className={styles.secondaryBtn}
-                onClick={saveOne}
-                disabled={saving}
-              >
-                add
-              </GooeyButton>
-            </GooeyButtonGroup>
+            )}
           </div>
         </main>
         <Gnb />

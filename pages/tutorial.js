@@ -1,6 +1,7 @@
 import Head from "next/head";
 import { useRouter } from "next/router";
 import { useEffect, useMemo, useState } from "react";
+import { serverTimestamp } from "firebase/firestore";
 import GooeyButton from "@/components/GooeyButton";
 import GooeyButtonGroup from "@/components/GooeyButtonGroup";
 import GooeyMetaballs from "@/components/GooeyMetaballs";
@@ -53,6 +54,15 @@ export default function TutorialPage() {
       setError("Please use at least 3 characters.");
       return;
     }
+    try {
+      await upsertUser(userId, {
+        smallDreamText: small.trim(),
+        smallDreamUpdatedAt: serverTimestamp(),
+      });
+    } catch (e) {
+      setError(firebaseErrorToMessage(e));
+      return;
+    }
     setStep(1);
   }
 
@@ -70,11 +80,12 @@ export default function TutorialPage() {
     try {
       const bigDreamTexts = [big.trim()];
       await upsertUser(userId, {
-        createdAt: new Date().toISOString(),
         tutorialCompleted: true,
         smallDreamText: small.trim(),
+        smallDreamUpdatedAt: serverTimestamp(),
         bigDreamTexts,
         bigDreamText: bigDreamTexts[0],
+        bigDreamUpdatedAt: serverTimestamp(),
       });
       router.push("/main");
     } catch (e) {

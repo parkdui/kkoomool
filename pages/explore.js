@@ -1,6 +1,8 @@
 import Head from "next/head";
 import Gnb from "@/components/Gnb";
 import { useUserId } from "@/lib/useUserId";
+import styles from "@/styles/Main.module.css";
+import splashStyles from "@/styles/Splash.module.css";
 
 export default function ExplorePage() {
   useUserId({ required: true });
@@ -10,16 +12,15 @@ export default function ExplorePage() {
         <title>Explore • kkoomool</title>
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
-      <div className="appShell">
-        <main className="screen">
-          <h1 className="header-mideum">Explore</h1>
-          <p style={{ marginTop: 10, color: "var(--text-muted)", fontWeight: 650 }}>
-            (placeholder) — next: explore other users’ dreams.
+      <main className={`screen ${styles.home}`}>
+          <header className={styles.header}>
+            <h1 className={`header-small`}>Drag to explore freely.</h1>
+            <p className={`body-small ${styles.sub}`}>
+           You might buy it, or offer yours.
           </p>
-        </main>
+        </header>
         <Gnb />
-      </div>
+      </main>
     </>
   );
 }
-

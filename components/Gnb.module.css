@@ -6,20 +6,25 @@
   width: calc(100% - 24px);
   max-width: 520px;
   border-radius: 999px;
-  padding: 10px 10px;
+  padding: 12px 12px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 6px;
   z-index: 20;
+  background: color(--var-primary-80);
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .item {
   display: grid;
   place-items: center;
-  padding: 10px 8px;
+  padding: 20px 10px;
   border-radius: 999px;
+  background: color(--var-primary-70);
   transition: background 160ms ease, transform 160ms ease;
-  color: var(--text-muted);
+  color: var(--color-primary-30);
 }
 
 .item:active {
@@ -27,18 +32,13 @@
 }
 
 .label {
-  margin-top: 4px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: 18px;
+  font-weight: 400;
   color: currentColor;
 }
 
 .active {
-  background: var(--highlight);
-  color: var(--foreground);
-}
-
-.active .label {
-  color: currentColor;
+  background: var(--color-primary-20);
+  color: var(--color-gray-100);
 }
 
